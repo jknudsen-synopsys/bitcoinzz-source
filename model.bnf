@@ -1,0 +1,50 @@
+octet = 0x00-0xff
+
+command-chooser = !corr:target ( # Message name
+    .version-name: 'version' 5(octet)
+  | .verack-name: 'verack' 6(octet)
+  | .any: 12(octet) 
+)
+
+bitcoin-header = (
+    .magic: 0xfabfb5da # Magic number for regtest
+    .command: command-chooser
+    .size: !length32:target 0x00000000-0xffffffff
+    .checksum: !sha256x2:target 0x00000000-0xffffffff
+)
+
+bitcoin-payload = !corr:source (
+    .version-payload: version-payload
+  | .verack-payload: verack-payload
+  | .any-payload: any-payload
+)
+
+bitcoin-message = @corr @length32 @sha256x2 (
+  .header: bitcoin-header
+  .payload: !length32:source !sha256x2:source bitcoin-payload
+)
+
+version-payload = (
+  .version: (0x7f110100 | 4(octet))
+  .services: (0x0904000000000000 | 8(octet))
+  .timestamp: (0x6ff27d5f00000000 | 8(octet))
+  .addr-recvservices: (0x0100000000000000 | 8(octet))
+  .addr-recvipaddress: (0x00000000000000000000000000000000 | 16(octet))
+  .addr-recvport: 0x0000 - 0xffff
+  .addr-transservices: (0x0904000000000000 | 8(octet))
+  .addr-transipaddress: (0x00000000000000000000000000000000 | 16(octet))
+  .addr-transport: 0x0000 - 0xffff
+  .nonce: (0xcf7990b352cb105e | 8(octet))
+  .user-agentbytes: (0x10 | 0x00-0xff)
+  .user-agent: ('/Satoshi:0.20.1/' | 0..255(octet))
+  .start-height: (0x65000000 | 4(octet))
+  .relay: (0x01 | octet)
+)
+
+verack-payload = (
+  0..n(octet)
+)
+
+any-payload = (
+  0..n(octet)
+)
